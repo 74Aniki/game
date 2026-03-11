@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兄貴のたこ焼きキャッチ</title>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        body { 
+            margin: 0; padding: 0; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+            font-family: 'M PLUS Rounded 1c', sans-serif; 
+            background-image: url('aka_haikei.png');
+            background-size: 400px;
+            animation: bg-scroll 15s linear infinite;
+            transition: background-color 0.5s;
+            user-select: none;
+        }
+
+        @keyframes bg-scroll { 0% { background-position: 0 0; } 100% { background-position: 400px 400px; } }
+
+        body.fever-mode {
+            background-color: #ff9ff3 !important;
+            animation: bg-scroll 2s linear infinite !important;
+        }
+        #game-container.fever-mode {
+            background-color: #ffd32a !important;
+            box-shadow: 0 0 50px #ff3f34, 0 0 80px #ff9ff3 inset !important;
+            border-color: #ff3f34 !important;
+        }
+        .fever-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 50px; color: #ff3f34;
+            text-shadow: 3px 3px 0 #fff, -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff;
+            font-weight: bold; z-index: 100; pointer-events: none;
+            animation: pulse 0.5s infinite alternate; white-space: nowrap;
+        }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 100% { transform: translate(-50%, -50%) scale(1.1); } }
+
+        #main-wrapper { display: flex; align-items: flex-end; gap: 30px; z-index: 10; margin-top: 30px; }
+        #center-column { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+        .character-container { display: flex; flex-direction: column; align-items: center; position: relative; padding-bottom: 20px; }
+        .speech-bubble {
+            background: #fff; border-radius: 20px; padding: 15px 20px; font-size: 20px; color: #d35400;
+            border: 5px solid #e15f41; margin-bottom: 20px; text-align: center; width: 220px;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1); position: relative; white-space: pre-line; line-height: 1.4;
+            min-height: 60px; display: flex; align-items: center; justify-content: center; z-index: 3; font-weight: bold;
+        }
+        .speech-bubble::after { content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); border-width: 16px 16px 0; border-style: solid; border-color: #e15f41 transparent transparent transparent; }
+        .speech-bubble::before { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent transparent; z-index: 1; }
+
+        .character { width: 250px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); z-index: 2; }
+        .char-aniki { animation: float-aniki 2s ease-in-out infinite alternate; }
+        @keyframes float-aniki { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+        .char-tako { animation: float-tako 2s ease-in-out infinite alternate 0.5s; }
+        @keyframes float-tako { 0% { transform: scaleX(-1) translateY(0); } 100% { transform: scaleX(-1) translateY(-15px); } }
+
+        #tako-logo { width: 280px; position: absolute; top: -240px; animation: sway 2s ease-in-out infinite alternate; z-index: 4; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2)); pointer-events: none; }
+        @keyframes sway { 0% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }
+
+        #game-container { 
+            position: relative; background-color: #5d4037; border-radius: 10px; overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 8px solid #8b4513; touch-action: none; 
+            width: 400px; height: 550px; transition: background-color 0.3s, box-shadow 0.3s, border-color 0.3s;
+            cursor: pointer;
+        }
+        
+        #game-container::before {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; height: 80%; background-image: url('aniki_goldlogo.png'); background-size: contain; background-position: center; background-repeat: no-repeat; opacity: 0.1; pointer-events: none; z-index: 0;
+        }
+
+        /* リアルな熱々の黒い鉄板の背景（等間隔の穴） */
+        #teppan-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 90px;
+            background-color: #2c2c2c;
+            background-image: radial-gradient(circle at 50% 50%, #0a0a0a 15px, transparent 16px);
+            background-size: 40px 40px; 
+            background-position: 0 10px; 
+            border-bottom: 4px solid #111;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.9);
+            z-index: 0; pointer-events: none;
+        }
+        #teppan-bg::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(231, 76, 60, 0.15) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+
+        /* コンボUIのアニメーション */
+        @keyframes pop-combo {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .combo-pop { animation: pop-combo 0.2s ease-out; }
+
+        /* 透明なプラスチック容器（舟）のUI */
+        #boat-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 140px; height: 90px; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(200,230,255,0.15) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 12px; 
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+            gap: 4px; padding: 6px; box-sizing: border-box;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3), 
+                        inset 0 0 15px rgba(255,255,255,0.9), 
+                        inset 0 -5px 10px rgba(173, 216, 230, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 2; pointer-events: auto; cursor: pointer;
+        }
+        .boat-slot { 
+            width: 100%; height: 100%; border-radius: 50%; 
+            background: rgba(255,255,255,0.2); 
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+            pointer-events: none; position: relative; 
+        }
+        .boat-slot img { width: 100%; height: 100%; object-fit: contain; display: block; position: absolute; top: 0; left: 0; pointer-events: none; }
+        .boat-label { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 16px; font-weight: bold; text-shadow: 1px 1px 2px #000; white-space: nowrap; pointer-events: none; }
+
+        @keyframes shake-boat {
+            0% { transform: translateX(-50%) rotate(0deg) scale(1); }
+            20% { transform: translateX(-50%) rotate(-5deg) scale(1.05); }
+            40% { transform: translateX(-50%) rotate(5deg) scale(1.05); }
+            60% { transform: translateX(-50%) rotate(-5deg) scale(1.05); }
+            80% { transform: translateX(-50%) rotate(5deg) scale(1.05); }
+            100% { transform: translateX(-50%) rotate(0deg) scale(1); }
+        }
+        .boat-shake { animation: shake-boat 0.3s ease-in-out; }
+
+        @keyframes koge-fly-right {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            40% { transform: translate(calc(-50% + 120px), calc(-50% - 150px)) scale(1.5) rotate(180deg); opacity: 1; }
+            100% { transform: translate(calc(-50% + 200px), calc(-50% + 350px)) scale(1) rotate(360deg); opacity: 0; }
+        }
+        @keyframes koge-fly-left {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            40% { transform: translate(calc(-50% - 120px), calc(-50% - 150px)) scale(1.5) rotate(-180deg); opacity: 1; }
+            100% { transform: translate(calc(-50% - 200px), calc(-50% + 350px)) scale(1) rotate(-360deg); opacity: 0; }
+        }
+
+        .delivery-msg {
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+            font-size: 32px; color: #fff; text-shadow: 2px 2px 0 #e15f41, -2px -2px 0 #e15f41, 2px -2px 0 #e15f41, -2px 2px 0 #e15f41;
+            font-weight: bold; z-index: 10; pointer-events: none; animation: popUp 1.5s ease-out forwards; width: 100%; text-align: center;
+        }
+        @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, 20px) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 80% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50px) scale(1); } }
+        
+        #sunglasses-tako {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 100; pointer-events: none; display: flex; flex-direction: column; align-items: center;
+            animation: bounceIn 2s ease-out forwards;
+        }
+        #sunglasses-tako img { width: 180px; }
+        #sunglasses-tako .shades { position: absolute; top: 45px; font-size: 70px; }
+        @keyframes bounceIn { 0% { transform: translate(-50%, -50%) scale(0); } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); } 40% { transform: translate(-50%, -50%) scale(1) rotate(-10deg); } 60% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+
+        .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,249,230,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; pointer-events: auto; }
+        
+        .pop-title {
+            font-size: 44px; color: #fff; -webkit-text-stroke: 2px #e15f41; paint-order: stroke fill;
+            text-shadow: 0 6px 0 #c44536, 0 8px 15px rgba(0,0,0,0.2); line-height: 1.2;
+            margin: 0 0 20px 0; transform: rotate(-3deg); text-align: center; letter-spacing: 1px;
+        }
+        .pop-title span.small { font-size: 24px; color: #f1c40f; -webkit-text-stroke: 2px #d35400; display: block; margin-top: 5px; }
+
+        .action-btn { background: #fff; color: #e15f41; padding: 8px 15px; border-radius: 30px; font-size: 18px; border: 4px solid #e15f41; box-shadow: 0 5px 0 #e15f41; cursor: pointer; margin: 8px auto; font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: bold; transition: transform 0.1s; width: 280px; white-space: nowrap; display: block; text-align: center; }
+        .action-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        .score-list { background: #fff; border: 4px solid #e15f41; border-radius: 20px; padding: 15px 30px; margin-bottom: 20px; width: 80%; text-align: center; }
+        .score-list h3 { color: #333; margin: 10px 0 5px 0; font-size: 18px; border-bottom: 2px dashed #f1c40f; padding-bottom: 5px; }
+        .score-list p { color: #e15f41; margin: 0 0 10px 0; font-size: 16px; font-weight: bold; }
+
+        #touch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; touch-action: none; cursor: pointer; }
+
+        #bottom-panel { display: none; width: 400px; justify-content: space-between; align-items: center; margin-top: 15px; padding: 0 5px; box-sizing: border-box; }
+        
+        #score-container, #balls-container {
+            background: rgba(255,255,255,0.95); padding: 5px 15px; border-radius: 20px; 
+            text-align: center; width: 90px;
+        }
+        #score-container { border: 3px solid #e15f41; box-shadow: 0 4px 0 #e15f41; }
+        #score-container span { color: #d35400; font-size: 11px; font-weight: bold; display: block; }
+        #score-val { color: #e15f41; font-size: 18px; font-weight: bold; text-shadow: 1px 1px 0 #fad390; }
+
+        #balls-container { border: 3px solid #3498db; box-shadow: 0 4px 0 #3498db; transition: opacity 0.3s; }
+        #balls-container span { color: #2980b9; font-size: 11px; font-weight: bold; display: block; }
+        #balls-val { color: #3498db; font-size: 18px; font-weight: bold; text-shadow: 1px 1px 0 #fad390; }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; align-items: center; }
+        .circle-btn {
+            background: #fff; border: 4px solid #e15f41; border-radius: 50%; width: 55px; height: 55px; cursor: pointer;
+            box-shadow: 0 5px 0 #e15f41; display: flex; justify-content: center; align-items: center; transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .circle-btn:active { transform: translateY(4px); box-shadow: none; }
+        .icon-svg { width: 30px; height: 30px; stroke: #e15f41; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .icon-fill { fill: #e15f41; stroke: none; }
+    </style>
+</head>
+<body>
+
+    <audio id="bgm" src="song_anitako.mp3" loop></audio>
+
+    <div id="main-wrapper">
+        <div class="character-container">
+            <div class="speech-bubble" id="speech-aniki">ホールドして左右に動かせ！<br>落とさず連続キャッチだ！</div>
+            <img src="aniki_kamae.png" alt="お兄さん" class="character char-aniki">
+        </div>
+
+        <div id="center-column">
+            <div id="game-container">
+                <div id="teppan-bg"></div>
+                <canvas id="matter-canvas"></canvas>
+
+                <div id="ui-layer">
+                    <div id="boat-container" style="display:none;">
+                        <div class="boat-slot" id="slot-0"></div>
+                        <div class="boat-slot" id="slot-1"></div>
+                        <div class="boat-slot" id="slot-2"></div>
+                        <div class="boat-slot" id="slot-3"></div>
+                        <div class="boat-slot" id="slot-4"></div>
+                        <div class="boat-slot" id="slot-5"></div>
+                        <div class="boat-label">6個で 500円！</div>
+                    </div>
+                    
+                    <div id="combo-container" style="display:none; position:absolute; top: 120px; right: 20px; text-align: right; z-index: 10;">
+                        <div id="combo-text" style="font-size: 32px; color: #ff9ff3; font-weight: bold; text-shadow: 2px 2px 0 #d35400, -2px -2px 0 #d35400, 2px -2px 0 #d35400, -2px 2px 0 #d35400; font-style: italic; line-height: 1;"></div>
+                        <div id="combo-multiplier" style="font-size: 20px; color: #f1c40f; font-weight: bold; text-shadow: 1px 1px 0 #d35400, -1px -1px 0 #d35400, 1px -1px 0 #d35400, -1px 1px 0 #d35400;"></div>
+                    </div>
+                </div>
+
+                <div id="start-screen" class="overlay-screen">
+                    <h1 class="pop-title">兄貴の<br>たこ焼きキャッチ<br><span class="small">アクションパズル</span></h1>
+                    <div id="diff-select" style="text-align: center;">
+                        <div class="instruction" style="font-size: 16px; color: #d35400; font-weight: bold; margin-bottom: 10px;">
+                            ホールド＆スワイプで舟を動かそう！<br>落とさずキャッチでコンボ＆売上UP！
+                        </div>
+                        <button class="action-btn" onclick="startGame('easy')">かんたん（40個）</button>
+                        <button class="action-btn" onclick="startGame('normal')">ふつう（72個）</button>
+                        <button class="action-btn" onclick="startGame('hard')">むずい（100個）</button>
+                        <button class="action-btn" style="margin-top: 15px; background: #f1c40f; border-color: #f39c12; color: #fff; box-shadow: 0 5px 0 #f39c12;" onclick="openScoreScreen()">🏆 売上きろく</button>
+                    </div>
+                </div>
+
+                <div id="score-screen" class="overlay-screen" style="display:none;">
+                    <h1>売上きろく</h1>
+                    <div class="score-list">
+                        <h3>かんたん</h3>
+                        <p>さいこう: <span id="record-high-easy">0</span>円 / ぜんかい: <span id="record-prev-easy">0</span>円</p>
+                        <h3>ふつう</h3>
+                        <p>さいこう: <span id="record-high-normal">0</span>円 / ぜんかい: <span id="record-prev-normal">0</span>円</p>
+                        <h3>むずい</h3>
+                        <p>さいこう: <span id="record-high-hard">0</span>円 / ぜんかい: <span id="record-prev-hard">0</span>円</p>
+                    </div>
+                    <button class="action-btn" style="margin-top: 20px;" onclick="closeScoreScreen()">もどる</button>
+                </div>
+
+                <div id="pause-screen" class="overlay-screen" style="display:none; background: rgba(0,0,0,0.6); z-index: 100;">
+                    <h1 style="font-size: 40px; color: #fff;">休憩中...🍵</h1>
+                    <button class="action-btn" onclick="togglePause()">ゲームにもどる</button>
+                    <button class="action-btn" style="background: #bdc3c7; border-color: #95a5a6; color: #fff; box-shadow: 0 5px 0 #95a5a6;" onclick="backToTitle()">やめる</button>
+                </div>
+
+                <div id="game-over-screen" class="overlay-screen" style="display:none; z-index: 100;">
+                    <h1 class="pop-title" style="color: #3498db; -webkit-text-stroke: 2px #2980b9; text-shadow: 0 6px 0 #2c3e50;">営業終了！<br><span class="small">おつかれッチョ〜</span></h1>
+                    <p style="font-size: 24px; color: #d35400; font-weight: bold; margin-bottom: 20px;">本日の売上: <span id="final-score" style="color: #e15f41; font-size: 36px;">0</span> 円</p>
+                    <button class="action-btn" onclick="backToTitle()">タイトルへもどる</button>
+                </div>
+            </div>
+
+            <div id="bottom-panel">
+                <div id="balls-container">
+                    <span>のこり</span>
+                    <div id="balls-val">72</div>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="mute-btn" class="circle-btn" onclick="toggleMute()">
+                        <svg id="icon-sound-on" class="icon-svg" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+                        <svg id="icon-sound-off" class="icon-svg" viewBox="0 0 24 24" style="display: none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+                    </button>
+                    <button id="pause-btn" class="circle-btn" onclick="togglePause()">
+                        <svg class="icon-fill" viewBox="0 0 24 24" style="width:24px; height:24px;">
+                            <rect x="6" y="5" width="4" height="14" rx="1"></rect>
+                            <rect x="14" y="5" width="4" height="14" rx="1"></rect>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="score-container">
+                    <span>本日の売上</span>
+                    <div id="score-val">0円</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="character-container">
+            <img src="aniki_logo.png" id="tako-logo" alt="ロゴ">
+            <div class="speech-bubble" id="speech-tako">落とさずキャッチで<br>コンボをつなぐッチョ！😎</div>
+            <img src="tako.png" alt="たこ" class="character char-tako">
+        </div>
+    </div>
+
+    <script>
+        const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
+
+        const width = 400;
+        const height = 550;
+        let engine, render, runner;
+        let isGameOver = false;
+        let isStarted = false;
+        let isPaused = false;
+        let isMuted = false;
+        let score = 0;
+        let ballsLeft = 0;
+        
+        let boatContents = [null, null, null, null, null, null];
+        let isDelivering = false;
+        let deliveryTimeout = null;
+        
+        let isFever = false;
+        let feverTimer = null;
+        let spawnTimer = null; 
+
+        // コンボシステム用変数
+        let combo = 0;
+        let comboMultiplier = 1.0;
+
+        let targetBoatX = width / 2;
+        let currentBoatX = width / 2;
+        let boatSensorBody = null;
+
+        let currentDiff = 'normal';
+        const diffSettings = {
+            easy: { balls: 40, spawnDelay: 1200, feverDelay: 400, kogeProb: 0.1 },
+            normal: { balls: 72, spawnDelay: 900, feverDelay: 250, kogeProb: 0.2 },
+            hard: { balls: 100, spawnDelay: 600, feverDelay: 150, kogeProb: 0.3 }
+        };
+
+        let scores = {
+            'easy': { high: localStorage.getItem('takocatch_high_easy') || 0, prev: localStorage.getItem('takocatch_prev_easy') || 0 },
+            'normal': { high: localStorage.getItem('takocatch_high_normal') || 0, prev: localStorage.getItem('takocatch_prev_normal') || 0 },
+            'hard': { high: localStorage.getItem('takocatch_high_hard') || 0, prev: localStorage.getItem('takocatch_prev_hard') || 0 }
+        };
+
+        const takoImages = ['2_takoyaki.png', '3_takoyaki.png', '4_takoyaki.png'];
+        const loadedImages = [];
+        takoImages.forEach((src, i) => {
+            loadedImages[i] = new Image();
+            loadedImages[i].src = src;
+        });
+
+        const anikiQuotes = ["ホールドしたまま\n左右にスライドだ！", "落とさずキャッチで\n売上倍率アップだぜ！", "焦げをスルーしても\nコンボは切れないぞ！", "透明なプラ舟に\n綺麗に詰めるんだぜ！"];
+        const takoQuotes = ["ピンポンコンパン！\nいい音ッチョ！", "コンボをつないで\n大儲けッチョー！", "スマホを振っても\n舟が揺れるッチョ！", "お祭りさわぎだッチョ！"];
+        let chatInterval;
+
+        function updateScoreDisplay() {
+            ['easy', 'normal', 'hard'].forEach(diff => {
+                document.getElementById(`record-high-${diff}`).innerText = scores[diff].high;
+                document.getElementById(`record-prev-${diff}`).innerText = scores[diff].prev;
+            });
+        }
+        updateScoreDisplay();
+
+        function openScoreScreen() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('score-screen').style.display = 'flex';
+        }
+        function closeScoreScreen() {
+            document.getElementById('score-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        function startChatter() {
+            clearInterval(chatInterval);
+            chatInterval = setInterval(() => {
+                if(isStarted && !isGameOver && !isDelivering && !isFever && !isPaused) {
+                    document.getElementById('speech-aniki').innerText = anikiQuotes[Math.floor(Math.random() * anikiQuotes.length)];
+                    document.getElementById('speech-tako').innerText = takoQuotes[Math.floor(Math.random() * takoQuotes.length)];
+                }
+            }, 6000);
+        }
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'drop') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'pin') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000 + Math.random() * 500, now);
+                gainNode.gain.setValueAtTime(0.03, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'goal') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.2, now); gainNode.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'bonus') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(440, now); osc.frequency.linearRampToValueAtTime(880, now + 0.1); osc.frequency.linearRampToValueAtTime(1760, now + 0.3);
+                gainNode.gain.setValueAtTime(0.15, now); gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const bgm = document.getElementById('bgm');
+            bgm.muted = isMuted;
+            document.getElementById('icon-sound-on').style.display = isMuted ? 'none' : 'block';
+            document.getElementById('icon-sound-off').style.display = isMuted ? 'block' : 'none';
+        }
+
+        function togglePause() {
+            if (!isStarted || isGameOver) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                Runner.stop(runner);
+                clearTimeout(spawnTimer);
+                document.getElementById('pause-screen').style.display = 'flex';
+                document.getElementById('speech-aniki').innerText = "ちょっと休憩だ！\nお茶でも飲むか？";
+                document.getElementById('speech-tako').innerText = "休憩ッチョ〜🍵";
+            } else {
+                Runner.start(runner, engine);
+                scheduleNextSpawn();
+                document.getElementById('pause-screen').style.display = 'none';
+                document.getElementById('speech-aniki').innerText = "よし、営業再開だ！";
+                document.getElementById('speech-tako').innerText = "がんばるッチョ！";
+            }
+        }
+
+        function startGame(difficulty) {
+            currentDiff = difficulty;
+            const settings = diffSettings[currentDiff];
+
+            initAudio();
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.5; bgm.playbackRate = 1.0;
+            bgm.play().catch(e => console.log("BGM blocked"));
+
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('boat-container').style.display = 'grid';
+            document.getElementById('bottom-panel').style.display = 'flex';
+            
+            Composite.clear(engine.world, false, true);
+            score = 0;
+            ballsLeft = settings.balls;
+            boatContents = [null, null, null, null, null, null];
+            isDelivering = false;
+            isFever = false;
+            isPaused = false;
+            
+            // コンボの初期化
+            combo = 0;
+            comboMultiplier = 1.0;
+            updateComboUI();
+            
+            targetBoatX = width / 2;
+            currentBoatX = width / 2;
+            document.getElementById('boat-container').style.left = currentBoatX + 'px';
+            
+            updateScore(0);
+            updateBalls();
+            updateBoatUI();
+            
+            createWorld();
+            
+            isStarted = true;
+            isGameOver = false;
+            
+            document.getElementById('speech-aniki').innerText = "アツアツ鉄板キャッチ！\nホールドして舟を動かせ！";
+            document.getElementById('speech-tako').innerText = "狙ってキャッチだッチョ！";
+            
+            startChatter();
+            
+            clearTimeout(spawnTimer);
+            scheduleNextSpawn();
+        }
+
+        function backToTitle() {
+            initAudio();
+            if (isPaused) togglePause();
+            clearTimeout(spawnTimer);
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('boat-container').style.display = 'none';
+            document.getElementById('bottom-panel').style.display = 'none';
+            document.getElementById('combo-container').style.display = 'none';
+            isStarted = false;
+            Composite.clear(engine.world, false, true);
+        }
+
+        function scheduleNextSpawn() {
+            if (!isStarted || isGameOver || isPaused) return;
+            
+            const settings = diffSettings[currentDiff];
+
+            if (ballsLeft > 0 || isFever) {
+                const colIndex = Math.floor(Math.random() * 10); 
+                const spawnX = 20 + colIndex * 40; 
+                
+                if (!isFever) {
+                    ballsLeft--;
+                    updateBalls();
+                }
+                
+                const typeIndex = Math.floor(Math.random() * 3);
+                const isKoge = !isFever && (Math.random() < settings.kogeProb); 
+                
+                const newTako = createTakoyaki(spawnX, 30, typeIndex, isKoge);
+                playSound('drop');
+                
+                Body.setStatic(newTako, true);
+                
+                setTimeout(() => {
+                    if (!isGameOver && newTako && Composite.allBodies(engine.world).includes(newTako)) {
+                        Body.setStatic(newTako, false);
+                        const vx = (Math.random() - 0.5) * 8; 
+                        const vy = Math.random() * 3 + 2;     
+                        Body.setVelocity(newTako, { x: vx, y: vy });
+                    }
+                }, 1000);
+            }
+
+            if (!isFever && ballsLeft === 0) {
+                document.getElementById('speech-aniki').innerText = "ラストだ！\n全部キャッチしろ！";
+                document.getElementById('speech-tako').innerText = "最後ッチョー！";
+            } else {
+                const delay = isFever ? settings.feverDelay : settings.spawnDelay;
+                spawnTimer = setTimeout(scheduleNextSpawn, delay);
+            }
+        }
+
+        function createTakoyaki(x, y, typeIndex, isKoge = false) {
+            const radius = 15;
+            const tako = Bodies.circle(x, y, radius, {
+                label: `tako_${typeIndex}`,
+                restitution: 0.8,
+                friction: 0.001,
+                frictionAir: 0.03, 
+                density: 0.001,
+                collisionFilter: { group: -1 },
+                render: { visible: false }
+            });
+            
+            tako.typeIndex = typeIndex;
+            tako.radius = radius;
+            tako.isKoge = isKoge; 
+            Composite.add(engine.world, tako);
+            return tako;
+        }
+
+        // ==========================
+        // コンボUIの更新とリセット
+        // ==========================
+        function updateComboUI() {
+            const container = document.getElementById('combo-container');
+            if (combo > 1) {
+                container.style.display = 'block';
+                // ★ 「コンボ!」を日本語で表示
+                document.getElementById('combo-text').innerText = `${combo} コンボ!`;
+                document.getElementById('combo-multiplier').innerText = `売上 ${comboMultiplier.toFixed(1)}倍!`;
+                
+                // アニメーションを再発火
+                container.classList.remove('combo-pop');
+                void container.offsetWidth;
+                container.classList.add('combo-pop');
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function resetCombo() {
+            if (combo > 0) {
+                combo = 0;
+                comboMultiplier = 1.0;
+                updateComboUI();
+                
+                // コンボが切れた時のセリフ
+                if (!isFever && !isDelivering) {
+                    document.getElementById('speech-aniki').innerText = "ああっ！\n落としちまった！";
+                    document.getElementById('speech-tako').innerText = "コンボが途切れたッチョ！";
+                }
+            }
+        }
+
+        function updateScore(add) {
+            if(add > 0) score += add;
+            document.getElementById('score-val').innerText = score + "円";
+        }
+
+        function updateBalls() {
+            document.getElementById('balls-val').innerText = isFever ? "∞" : ballsLeft;
+            document.getElementById('balls-container').style.opacity = isFever ? "0.5" : "1";
+        }
+
+        function updateBoatUI() {
+            for(let i = 0; i < 6; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                const content = boatContents[i];
+                
+                if(content && !content.animating) {
+                    const filterStr = content.isKoge ? 'style="filter: brightness(0.2) sepia(1) hue-rotate(-50deg) saturate(3);"' : '';
+                    slot.innerHTML = `<img src="${takoImages[content.type]}" ${filterStr}>`;
+                } else {
+                    slot.innerHTML = '';
+                }
+            }
+        }
+
+        function animateTakoyaki(takoBody, targetIndex) {
+            const container = document.getElementById('game-container');
+            const slotEl = document.getElementById(`slot-${targetIndex}`);
+            
+            const animEl = document.createElement('div');
+            animEl.style.position = 'absolute';
+            animEl.style.left = (takoBody.position.x - 15) + 'px';
+            animEl.style.top = (takoBody.position.y - 15) + 'px';
+            animEl.style.width = '30px';
+            animEl.style.height = '30px';
+            animEl.style.zIndex = '50'; 
+            animEl.style.transition = 'all 0.3s ease-in-out';
+            animEl.style.pointerEvents = 'none';
+            
+            const img = document.createElement('img');
+            img.src = takoImages[takoBody.typeIndex];
+            img.style.width = '100%';
+            img.style.height = '100%';
+            if (takoBody.isKoge) {
+                img.style.filter = 'brightness(0.2) sepia(1) hue-rotate(-50deg) saturate(3)'; 
+            }
+            animEl.appendChild(img);
+            container.appendChild(animEl);
+            
+            void animEl.offsetWidth;
+            
+            const containerRect = container.getBoundingClientRect();
+            const slotRect = slotEl.getBoundingClientRect();
+            const targetX = slotRect.left - containerRect.left + (slotRect.width - 30) / 2;
+            const targetY = slotRect.top - containerRect.top + (slotRect.height - 30) / 2;
+            
+            animEl.style.left = targetX + 'px';
+            animEl.style.top = targetY + 'px';
+            
+            setTimeout(() => {
+                if(container.contains(animEl)) container.removeChild(animEl);
+                if (boatContents[targetIndex]) {
+                    boatContents[targetIndex].animating = false;
+                }
+                updateBoatUI();
+                checkDelivery();
+            }, 300); 
+        }
+
+        function animateKogeEjection(slotIndex, typeIndex) {
+            const container = document.getElementById('game-container');
+            const slotEl = document.getElementById(`slot-${slotIndex}`);
+            
+            const animEl = document.createElement('img');
+            animEl.src = takoImages[typeIndex];
+            animEl.style.position = 'absolute';
+            animEl.style.width = '30px';
+            animEl.style.height = '30px';
+            animEl.style.zIndex = '100';
+            animEl.style.filter = 'brightness(0.2) sepia(1) hue-rotate(-50deg) saturate(3)';
+            animEl.style.pointerEvents = 'none';
+            
+            const containerRect = container.getBoundingClientRect();
+            const slotRect = slotEl.getBoundingClientRect();
+            const startX = slotRect.left - containerRect.left + slotRect.width / 2;
+            const startY = slotRect.top - containerRect.top + slotRect.height / 2;
+            
+            animEl.style.left = startX + 'px';
+            animEl.style.top = startY + 'px';
+            
+            const direction = Math.random() > 0.5 ? 1 : -1;
+            const animName = direction > 0 ? 'koge-fly-right' : 'koge-fly-left';
+            animEl.style.animation = `${animName} 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards`;
+            
+            container.appendChild(animEl);
+            
+            setTimeout(() => {
+                if (container.contains(animEl)) container.removeChild(animEl);
+            }, 600);
+        }
+
+        function triggerBoatShake() {
+            if (isDelivering || isGameOver || !isStarted || isPaused) return;
+            
+            const boatEl = document.getElementById('boat-container');
+            boatEl.classList.remove('boat-shake');
+            void boatEl.offsetWidth; 
+            boatEl.classList.add('boat-shake');
+
+            let removed = false;
+            for(let i=0; i<6; i++) {
+                if (boatContents[i] && boatContents[i].isKoge) {
+                    animateKogeEjection(i, boatContents[i].type);
+                    boatContents[i] = null; 
+                    removed = true;
+                }
+            }
+            
+            if (removed) {
+                playSound('drop');
+                updateBoatUI();
+                document.getElementById('speech-aniki').innerText = "スポーンッ！\n焦げを弾き飛ばしたぞ！";
+                
+                if (deliveryTimeout) {
+                    clearTimeout(deliveryTimeout);
+                    deliveryTimeout = null;
+                }
+            }
+        }
+
+        let lastTapTime = 0;
+        function handleGlobalTap() {
+            const now = Date.now();
+            if (now - lastTapTime < 400) { 
+                triggerBoatShake();
+                lastTapTime = 0; 
+            } else {
+                lastTapTime = now;
+            }
+        }
+
+        if (window.DeviceMotionEvent) {
+            let lastX = null, lastY = null, lastZ = null;
+            const shakeThreshold = 15;
+            window.addEventListener('devicemotion', (e) => {
+                let acc = e.accelerationIncludingGravity;
+                if (!acc || !acc.x) return;
+                if (lastX !== null) {
+                    let deltaX = Math.abs(lastX - acc.x);
+                    let deltaY = Math.abs(lastY - acc.y);
+                    let deltaZ = Math.abs(lastZ - acc.z);
+                    if (deltaX > shakeThreshold || deltaY > shakeThreshold || deltaZ > shakeThreshold) {
+                        triggerBoatShake();
+                    }
+                }
+                lastX = acc.x; lastY = acc.y; lastZ = acc.z;
+            });
+        }
+
+        const gameContainer = document.getElementById('game-container');
+        function handleMoveCommand(e) {
+            if (!isStarted || isGameOver || isPaused) return;
+            const rect = gameContainer.getBoundingClientRect();
+            let clientX = e.clientX;
+            if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; }
+            if (clientX === undefined) return;
+
+            let newTargetX = clientX - rect.left;
+            targetBoatX = Math.max(70, Math.min(width - 70, newTargetX));
+        }
+
+        gameContainer.addEventListener('touchstart', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            e.preventDefault(); 
+            handleGlobalTap(); 
+            handleMoveCommand(e);
+        }, {passive: false});
+
+        gameContainer.addEventListener('touchmove', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            e.preventDefault();
+            handleMoveCommand(e);
+        }, {passive: false});
+
+        gameContainer.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            handleGlobalTap(); 
+            handleMoveCommand(e);
+            const onMouseMove = (me) => handleMoveCommand(me);
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+
+        function startFever() {
+            isFever = true;
+            document.body.classList.add('fever-mode');
+            document.getElementById('game-container').classList.add('fever-mode');
+            
+            const bgm = document.getElementById('bgm');
+            bgm.playbackRate = 1.3;
+            
+            updateBalls(); 
+
+            clearTimeout(feverTimer);
+            
+            const feverUi = document.createElement('div');
+            feverUi.className = 'fever-text';
+            feverUi.innerText = "FEVER TIME!!";
+            document.getElementById('game-container').appendChild(feverUi);
+            
+            feverTimer = setTimeout(() => {
+                isFever = false;
+                document.body.classList.remove('fever-mode');
+                document.getElementById('game-container').classList.remove('fever-mode');
+                bgm.playbackRate = 1.0;
+                
+                if(document.getElementById('game-container').contains(feverUi)) {
+                    document.getElementById('game-container').removeChild(feverUi);
+                }
+                document.getElementById('speech-aniki').innerText = "フィーバー終了！\n通常営業に戻るぜ！";
+                updateBalls();
+                
+                checkGameOver();
+            }, 10000); 
+        }
+
+        function createWorld() {
+            const leftWall = Bodies.rectangle(-10, height/2, 20, height, { isStatic: true });
+            const rightWall = Bodies.rectangle(width + 10, height/2, 20, height, { isStatic: true });
+            Composite.add(engine.world, [leftWall, rightWall]);
+
+            const pinRadius = 4;
+            const rowCount = 5; 
+            const colCount = 6;
+            const xSpacing = width / colCount; 
+            const ySpacing = 50; 
+
+            for (let r = 0; r < rowCount; r++) {
+                const offset = (r % 2 === 0) ? xSpacing / 2 : xSpacing;
+                const pinsInRow = (r % 2 === 0) ? colCount : colCount - 1;
+
+                for (let c = 0; c < pinsInRow; c++) {
+                    let x = offset + c * xSpacing;
+                    let y = 120 + r * ySpacing; 
+                    
+                    x += (Math.random() - 0.5) * 15;
+                    y += (Math.random() - 0.5) * 15;
+                    x = Math.max(40, Math.min(width - 40, x)); 
+
+                    const pin = Bodies.circle(x, y, pinRadius, { 
+                        isStatic: true, render: { fillStyle: '#f1c40f' }, label: 'pin'
+                    });
+                    Composite.add(engine.world, pin);
+                }
+            }
+
+            boatSensorBody = Bodies.rectangle(width/2, height - 65, 140, 90, {
+                isStatic: true, isSensor: true, render: { fillStyle: 'transparent' }, label: 'boat_sensor'
+            });
+            Composite.add(engine.world, boatSensorBody);
+        }
+
+        function init() {
+            engine = Engine.create();
+            engine.world.gravity.y = 0.3;
+            
+            const matterCanvas = document.getElementById('matter-canvas');
+            matterCanvas.width = width; matterCanvas.height = height;
+
+            render = Render.create({
+                canvas: matterCanvas, engine: engine,
+                options: { width: width, height: height, wireframes: false, background: 'transparent' }
+            });
+
+            Render.run(render);
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            Events.on(render, 'afterRender', () => {
+                const ctx = render.context;
+                const bodies = Composite.allBodies(engine.world);
+
+                bodies.forEach(body => {
+                    if (body.label.startsWith('tako')) {
+                        const { x, y } = body.position;
+                        const radius = body.radius;
+                        const img = loadedImages[body.typeIndex];
+                        
+                        ctx.translate(x, y);
+                        ctx.rotate(body.angle);
+                        
+                        if(img && img.complete) {
+                            if (body.isKoge) {
+                                ctx.filter = 'brightness(0.2) sepia(1) hue-rotate(-50deg) saturate(3)';
+                            }
+                            ctx.drawImage(img, -radius, -radius, radius*2, radius*2);
+                            ctx.filter = 'none';
+                        }
+                        
+                        ctx.rotate(-body.angle);
+                        ctx.translate(-x, -y);
+                    }
+                });
+            });
+
+            Events.on(engine, 'collisionStart', (event) => {
+                event.pairs.forEach((pair) => {
+                    const { bodyA, bodyB } = pair;
+                    
+                    if(bodyA.label === 'pin' && bodyB.label.startsWith('tako')) { playSound('pin'); }
+                    if(bodyB.label === 'pin' && bodyA.label.startsWith('tako')) { playSound('pin'); }
+
+                    if(!isDelivering) {
+                        if(bodyA.label === 'boat_sensor' && bodyB.label.startsWith('tako')) { catchTako(bodyB); }
+                        if(bodyB.label === 'boat_sensor' && bodyA.label.startsWith('tako')) { catchTako(bodyA); }
+                    }
+                });
+            });
+
+            Events.on(engine, 'beforeUpdate', () => {
+                if (!isStarted || isGameOver || isPaused) return;
+                
+                currentBoatX += (targetBoatX - currentBoatX) * 0.3; 
+                if(boatSensorBody) {
+                    Body.setPosition(boatSensorBody, { x: currentBoatX, y: boatSensorBody.position.y });
+                }
+                const boatEl = document.getElementById('boat-container');
+                if(boatEl) {
+                    boatEl.style.left = currentBoatX + 'px';
+                }
+            });
+
+            Events.on(engine, 'afterUpdate', () => {
+                if (!isStarted || isGameOver || isPaused) return;
+                
+                const bodies = Composite.allBodies(engine.world);
+                bodies.forEach(body => {
+                    if(body.label.startsWith('tako')) {
+                        if (body.position.y > height + 20 || body.position.x < -20 || body.position.x > width + 20) {
+                            // 焦げ以外の普通のたこ焼きを画面外に落としたらコンボリセット
+                            if (!body.isKoge) {
+                                resetCombo();
+                            }
+                            Composite.remove(engine.world, body); 
+                        }
+                    }
+                });
+
+                if (!isDelivering) {
+                    checkGameOver();
+                }
+            });
+        }
+
+        function checkGameOver() {
+            if (isGameOver || isFever || isDelivering) return;
+            const takoCount = Composite.allBodies(engine.world).filter(b => b.label.startsWith('tako')).length;
+            const isAnimating = boatContents.some(c => c && c.animating);
+            
+            if (ballsLeft <= 0 && takoCount === 0 && !isAnimating) {
+                endGame();
+            }
+        }
+
+        function catchTako(takoBody) {
+            if(isDelivering) return;
+            
+            let targetIndex = -1;
+            let minDistance = Infinity;
+            const containerRect = document.getElementById('game-container').getBoundingClientRect();
+            
+            for (let i = 0; i < 6; i++) {
+                if (boatContents[i] !== null) continue;
+                
+                const slotEl = document.getElementById(`slot-${i}`);
+                const slotRect = slotEl.getBoundingClientRect();
+                
+                const slotX = slotRect.left - containerRect.left + slotRect.width / 2;
+                const slotY = slotRect.top - containerRect.top + slotRect.height / 2;
+                
+                const dx = takoBody.position.x - slotX;
+                const dy = takoBody.position.y - slotY;
+                const dist = dx * dx + dy * dy;
+                
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    targetIndex = i;
+                }
+            }
+            
+            if (targetIndex === -1) return;
+            
+            boatContents[targetIndex] = { type: takoBody.typeIndex, isKoge: takoBody.isKoge, animating: true };
+            Composite.remove(engine.world, takoBody); 
+            playSound('pin');
+            
+            // コンボ加算
+            combo++;
+            comboMultiplier = 1.0 + (combo - 1) * 0.1;
+            updateComboUI();
+            
+            animateTakoyaki(takoBody, targetIndex);
+        }
+
+        function checkDelivery() {
+            if (isDelivering) return;
+            
+            const filledCount = boatContents.filter(c => c !== null && !c.animating).length;
+            
+            if(filledCount === 6) {
+                if (deliveryTimeout) clearTimeout(deliveryTimeout);
+                deliveryTimeout = setTimeout(processDelivery, 800);
+            }
+        }
+
+        function processDelivery() {
+            isDelivering = true;
+            
+            // ★ 出荷演出中は物理演算とスポーンを一時停止する
+            Runner.stop(runner);
+            clearTimeout(spawnTimer);
+            
+            const items = boatContents.filter(c => c !== null);
+            const kogeCount = items.filter(c => c.isKoge).length;
+            const isPerfect = (kogeCount === 0) && items.every(val => val.type === items[0].type);
+            
+            let addScore = 0;
+            let msgText = '';
+            let shouldStartFever = false;
+            
+            if (isPerfect) {
+                addScore = 1500;
+                msgText = 'パーフェクトボーナス!!';
+                shouldStartFever = true;
+            } else if (kogeCount > 0) {
+                addScore = Math.max(0, 500 - (kogeCount * 100));
+                msgText = '焦げ混入...';
+            } else {
+                addScore = 500;
+                msgText = '毎度あり！';
+            }
+            
+            // コンボ倍率を適用
+            addScore = Math.floor(addScore * comboMultiplier);
+            msgText += ` ${addScore}円`;
+            
+            const gameContainer = document.getElementById('game-container');
+            const msg = document.createElement('div');
+            msg.className = 'delivery-msg';
+            msg.innerText = msgText;
+            gameContainer.appendChild(msg);
+
+            if(isPerfect) {
+                playSound('bonus');
+                const sunglassesTako = document.createElement('div');
+                sunglassesTako.id = 'sunglasses-tako';
+                sunglassesTako.innerHTML = `<img src="tako.png"><div class="shades">😎</div>`;
+                gameContainer.appendChild(sunglassesTako);
+                
+                document.getElementById('speech-tako').innerText = "イェーイ！\n最高だッチョ！😎";
+                document.getElementById('speech-aniki').innerText = "完璧だ！\nフィーバータイム突入だぜ！";
+                
+                setTimeout(() => { if(gameContainer.contains(sunglassesTako)) gameContainer.removeChild(sunglassesTako); }, 2000);
+            } else if (kogeCount > 0) {
+                playSound('pin');
+                document.getElementById('speech-aniki').innerText = "焦げが混じっちまったか…";
+                document.getElementById('speech-tako').innerText = "次は気を付けるッチョ！";
+            } else {
+                playSound('goal');
+                document.getElementById('speech-aniki').innerText = "6個入り一丁！\nお買い上げだ！";
+                document.getElementById('speech-tako').innerText = "おいしいッチョ〜！";
+            }
+
+            updateScore(addScore);
+
+            setTimeout(() => {
+                boatContents = [null, null, null, null, null, null];
+                updateBoatUI();
+                if(gameContainer.contains(msg)) gameContainer.removeChild(msg);
+                isDelivering = false;
+                
+                // ★ 演出が終わったら物理演算とスポーンを再開
+                if (!isPaused && !isGameOver) {
+                    Runner.start(runner, engine);
+                    if (shouldStartFever) {
+                        startFever();
+                    } else {
+                        scheduleNextSpawn();
+                    }
+                }
+                
+                checkGameOver();
+            }, 1500);
+        }
+
+        function endGame() {
+            if(isGameOver) return;
+            isGameOver = true;
+            clearInterval(chatInterval);
+            clearTimeout(spawnTimer);
+            playSound('goal'); 
+            
+            scores[currentDiff].prev = score;
+            localStorage.setItem(`takocatch_prev_${currentDiff}`, score);
+            if (score > scores[currentDiff].high) {
+                scores[currentDiff].high = score;
+                localStorage.setItem(`takocatch_high_${currentDiff}`, score);
+            }
+            updateScoreDisplay();
+
+            document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-score').innerText = score;
+            
+            if(score >= 5000) {
+                document.getElementById('speech-aniki').innerText = "大繁盛だ！\nこれぞ青年部の底力！";
+                document.getElementById('speech-tako').innerText = "伝説ッチョ〜！";
+            } else {
+                document.getElementById('speech-aniki').innerText = "本日の営業終了！\n明日も頼むぜ！";
+                document.getElementById('speech-tako').innerText = "また挑戦するッチョ！";
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
