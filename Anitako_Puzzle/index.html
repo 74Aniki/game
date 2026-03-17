@@ -20,27 +20,60 @@
 
         @keyframes bg-scroll { 0% { background-position: 0 0; } 100% { background-position: 400px 400px; } }
 
-        #main-wrapper { display: flex; align-items: flex-end; gap: 30px; z-index: 10; margin-top: 30px; }
+        /* 全体を中央寄せに変更 */
+        #main-wrapper { display: flex; align-items: center; justify-content: center; gap: 30px; z-index: 10; margin-top: 30px; transition: transform 0.2s ease-out; position: relative; }
         #center-column { display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-        .character-container { display: flex; flex-direction: column; align-items: center; position: relative; padding-bottom: 20px; }
+        /* 両サイドのコンテナをゲーム画面と同じ高さ（550px）に揃え、中身を均等配置する */
+        .character-container { 
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between; 
+            position: relative; height: 550px; padding: 10px 0; box-sizing: border-box; 
+        }
+
         .speech-bubble {
-            background: #fff; border-radius: 20px; padding: 15px 20px; font-size: 20px; color: #d35400;
-            border: 5px solid #e15f41; margin-bottom: 20px; text-align: center; width: 220px;
+            background: #fff; border-radius: 20px; padding: 15px 20px; font-size: 18px; color: #d35400;
+            border: 5px solid #e15f41; text-align: center; width: 180px;
             box-shadow: 0 5px 0 rgba(0,0,0,0.1); position: relative; white-space: pre-line; line-height: 1.4;
-            min-height: 60px; display: flex; align-items: center; justify-content: center; z-index: 3; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; z-index: 3; font-weight: bold;
         }
         .speech-bubble::after { content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); border-width: 16px 16px 0; border-style: solid; border-color: #e15f41 transparent transparent transparent; }
         .speech-bubble::before { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent transparent; z-index: 1; }
 
-        .character { width: 250px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); z-index: 2; }
+        /* 550pxの中に収まるよう最大サイズを指定 */
+        .character { width: 220px; max-height: 250px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); z-index: 2; }
         .char-aniki { animation: float-aniki 2s ease-in-out infinite alternate; }
         @keyframes float-aniki { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
         .char-tako { animation: float-tako 2s ease-in-out infinite alternate 0.5s; }
         @keyframes float-tako { 0% { transform: scaleX(-1) translateY(0); } 100% { transform: scaleX(-1) translateY(-15px); } }
 
-        #tako-logo { width: 280px; position: absolute; top: -240px; animation: sway 2s ease-in-out infinite alternate; z-index: 4; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2)); pointer-events: none; }
+        /* ロゴも絶対配置をやめ、コンテナの中で自然に配置されるように変更 */
+        #tako-logo { width: 220px; animation: sway 2s ease-in-out infinite alternate; z-index: 4; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2)); pointer-events: none; }
         @keyframes sway { 0% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }
+
+        /* 商工会テキストのデザイン（PC・横長用） */
+        #branch-text-landscape {
+            color: #fff;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #d35400, -2px -2px 0 #d35400, 2px -2px 0 #d35400, -2px 2px 0 #d35400;
+            z-index: 20;
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* 商工会テキストのデザイン（スマホ縦長用・デフォルトは非表示） */
+        #branch-text-portrait {
+            display: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 1px 1px 0 #d35400, -1px -1px 0 #d35400, 1px -1px 0 #d35400, -1px 1px 0 #d35400;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 2px;
+            line-height: 1.4;
+        }
 
         /* ゲーム画面 */
         #game-container { 
@@ -95,7 +128,7 @@
 
         .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,249,230,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; pointer-events: auto; }
         
-        /* 巨大でポップな3段組タイトル＆アニメーション（マージンを減らして画面に収める） */
+        /* 巨大でポップな3段組タイトル＆アニメーション */
         .pop-title {
             color: #fff; -webkit-text-stroke: 3.5px #e15f41; paint-order: stroke fill;
             text-shadow: 0 8px 0 #c44536, 0 15px 20px rgba(0,0,0,0.3); 
@@ -111,7 +144,7 @@
         .pop-title .line2 { font-size: 68px; display: block; letter-spacing: 3px; }
         .pop-title .line3 { font-size: 36px; display: block; color: #f1c40f; -webkit-text-stroke: 2.5px #d35400; margin-top: -5px; letter-spacing: 2px;}
 
-        /* お顔ON/OFF選択ボタン（中央寄せとマージン調整） */
+        /* お顔ON/OFF選択ボタン */
         .face-toggle-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; }
         .face-btn {
             background: #fff; color: #d35400; border: 3px solid #f1c40f; border-radius: 20px; padding: 8px 15px; 
@@ -121,7 +154,6 @@
             background: #ffeaa7; color: #e15f41; border-color: #e15f41; opacity: 1; box-shadow: 0 4px 0 #e15f41; transform: translateY(-2px);
         }
 
-        /* 画面に収まるよう、ボタンのサイズと余白を少し小さめに調整 */
         .action-btn { background: #fff; color: #e15f41; padding: 10px 22px; border-radius: 30px; font-size: 18px; border: 4px solid #e15f41; box-shadow: 0 4px 0 #e15f41; cursor: pointer; margin: 5px; font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: bold; transition: transform 0.1s; }
         .action-btn:active { transform: translateY(4px); box-shadow: none; }
         .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -151,11 +183,65 @@
             60% { transform: translateX(-50%) translateY(-60px); opacity: 1; }
             100% { transform: translateX(-50%) translateY(-200px); opacity: 0; } 
         }
+
+        /* 合体時の光輪エフェクト */
+        .merge-effect {
+            position: absolute; border-radius: 50%; border: 5px solid #fff;
+            box-shadow: 0 0 15px #f1c40f, inset 0 0 10px #f1c40f;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 15;
+            animation: mergeFlash 0.5s ease-out forwards;
+        }
+        @keyframes mergeFlash {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; border-width: 10px; }
+            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; border-width: 1px; }
+        }
         
         #touch-layer { position: absolute; top: 0; left: 0; width: 100%; height: 550px; z-index: 20; touch-action: none; cursor: grab; }
         #touch-layer:active { cursor: grabbing; }
         
         #pause-screen { background: rgba(0,0,0,0.6); display: none; }
+
+        /* スマホ用（縦長画面）レイアウト調整 */
+        @media screen and (max-width: 900px) {
+            #main-wrapper {
+                width: auto;
+                justify-content: center;
+                gap: 10px;
+            }
+            .character-container {
+                height: 550px;
+                width: 100px; /* 縦画面時は両サイドを狭くする */
+                padding: 0;
+            }
+            .character-container:first-child, .character-container:last-child {
+                position: static;
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .character {
+                width: 90px;
+                max-height: 120px; 
+            }
+            .speech-bubble {
+                writing-mode: vertical-rl;
+                text-orientation: upright;
+                width: auto;
+                padding: 10px 5px;
+                font-size: 14px;
+            }
+            .speech-bubble::after, .speech-bubble::before {
+                display: none; 
+            }
+            #tako-logo {
+                width: 100px;
+            }
+            #branch-text-landscape {
+                display: none;
+            }
+            #branch-text-portrait {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -163,7 +249,11 @@
     <audio id="bgm" src="song_anitako.mp3" loop></audio>
 
     <div id="main-wrapper">
+        
         <div class="character-container">
+            <div id="branch-text-landscape">南砺市商工会青年部<br>城端支部</div>
+            <div id="branch-text-portrait">南砺市商工会青年部<br>城端支部</div>
+            
             <div class="speech-bubble" id="speech-aniki">気合入れて<br>たこ焼きつくるぞ！</div>
             <img src="aniki_kamae.png" alt="お兄さん" class="character char-aniki">
         </div>
@@ -288,7 +378,8 @@
     </div>
 
     <script>
-        const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+        const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
+        let currentScale = 1; 
 
         const width = 400;
         const height = 550; 
@@ -423,6 +514,13 @@
                 osc.frequency.linearRampToValueAtTime(1200, now + 0.1); osc.frequency.linearRampToValueAtTime(2400, now + 0.3);
                 gainNode.gain.setValueAtTime(0.2, now); gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'explosion') {
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(150, now); 
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+                gainNode.gain.setValueAtTime(0.4, now); 
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
             }
         }
 
@@ -645,7 +743,9 @@
 
             playerX = width / 2; 
             const pContainer = document.getElementById('player-piece-container');
-            const visualSize = sizes[currentPiece.level] * 2;
+            
+            const visualSize = sizes[currentPiece.level] * 1.6;
+            
             pContainer.style.width = visualSize + 'px';
             pContainer.style.height = visualSize + 'px';
             pContainer.style.top = '40px'; 
@@ -672,7 +772,9 @@
             const rect = touchLayer.getBoundingClientRect();
             let clientX = e.clientX;
             if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; }
-            playerX = clientX - rect.left;
+            
+            playerX = (clientX - rect.left) / currentScale; 
+            
             updatePlayerPiecePosition();
         }
 
@@ -729,6 +831,20 @@
                 if(gameContainer.contains(img)) gameContainer.removeChild(img);
                 if(gameContainer.contains(scoreEl)) gameContainer.removeChild(scoreEl);
             }, 2500);
+        }
+
+        function createMergeEffect(x, y, radius) {
+            const container = document.getElementById('game-container');
+            const effect = document.createElement('div');
+            effect.className = 'merge-effect';
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            effect.style.width = (radius * 2) + 'px';
+            effect.style.height = (radius * 2) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => {
+                if(effect.parentNode) effect.parentNode.removeChild(effect);
+            }, 500);
         }
 
         function init() {
@@ -835,6 +951,8 @@
                                 playSound('merge');
                                 const baseScore = (level + 1) * 20;
                                 updateScore(baseScore * multi);
+                                
+                                createMergeEffect(newX, newY, sizes[level + 1] * 0.8);
                             }
                         }
                     }
@@ -896,24 +1014,7 @@
             document.getElementById('score-val').innerText = score;
         }
 
-        function endGame(reason) {
-            isGameOver = true;
-            canDrop = false;
-            document.getElementById('touch-layer').style.display = 'none';
-            document.getElementById('player-piece-container').style.display = 'none';
-
-            clearInterval(chatInterval);
-            clearInterval(countdownInterval);
-            playSound('gameover');
-            
-            scores[requiredSelections].prev = score;
-            localStorage.setItem(`takopazu_prev_${requiredSelections}`, score);
-            if (score > scores[requiredSelections].high) {
-                scores[requiredSelections].high = score;
-                localStorage.setItem(`takopazu_high_${requiredSelections}`, score);
-            }
-            updateScoreDisplay();
-
+        function showGameOverUI(reason) {
             document.getElementById('game-over-screen').style.display = 'flex';
             document.getElementById('final-score').innerText = score; 
             
@@ -927,6 +1028,67 @@
                 document.getElementById('speech-tako').innerText = "あちゃー！\nまた挑戦するッチョ！";
             }
         }
+
+        function endGame(reason) {
+            isGameOver = true;
+            canDrop = false;
+            document.getElementById('touch-layer').style.display = 'none';
+            document.getElementById('player-piece-container').style.display = 'none';
+
+            clearInterval(chatInterval);
+            clearInterval(countdownInterval);
+            
+            scores[requiredSelections].prev = score;
+            localStorage.setItem(`takopazu_prev_${requiredSelections}`, score);
+            if (score > scores[requiredSelections].high) {
+                scores[requiredSelections].high = score;
+                localStorage.setItem(`takopazu_high_${requiredSelections}`, score);
+            }
+            updateScoreDisplay();
+
+            if (reason === 'overflow') {
+                playSound('explosion'); 
+                
+                const bodies = Composite.allBodies(engine.world);
+                bodies.forEach(body => {
+                    if (!body.isStatic && body.label.startsWith('tako_')) {
+                        Body.setVelocity(body, {
+                            x: (Math.random() - 0.5) * 40,
+                            y: -(Math.random() * 20 + 15)
+                        });
+                        Body.setAngularVelocity(body, (Math.random() - 0.5) * 1.5);
+                    }
+                });
+                
+                setTimeout(() => {
+                    playSound('gameover');
+                    showGameOverUI(reason);
+                }, 1500);
+            } else {
+                playSound('gameover');
+                showGameOverUI(reason);
+            }
+        }
+
+        function adjustScale() {
+            const wrapper = document.getElementById('main-wrapper');
+            const baseWidth = window.innerWidth >= 900 ? 980 : 640; 
+            const baseHeight = window.innerWidth >= 900 ? 650 : 600; 
+            
+            const scaleX = window.innerWidth / baseWidth;
+            const scaleY = window.innerHeight / baseHeight;
+            
+            currentScale = Math.min(scaleX, scaleY) * 0.95; 
+            
+            if (currentScale > 1.2) currentScale = 1.2;
+
+            wrapper.style.transform = `scale(${currentScale})`;
+            wrapper.style.transformOrigin = 'center center';
+        }
+
+        window.addEventListener('resize', adjustScale);
+        window.addEventListener('load', adjustScale);
+        adjustScale(); 
 
         init();
     </script>
